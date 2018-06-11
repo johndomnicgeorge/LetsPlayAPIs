@@ -89,7 +89,10 @@
         $ret_res['game'] = $game;
         $ret_res['platform'] = $platform;
         $ret_res['nickname'] = $nickname;
-        $ret_res['nickname2'] = '';
+        $ret_res['nickname2'] = $nickname;
+        $ret_res['in_game_name'] = $nickname;
+        
+        $in_game_name = $nickname;
         $add_stats = array();
         $nickname2 = $nickname;
 	    
@@ -105,7 +108,9 @@
                     $ret_res['message'] = 'Invalid Custom URL. Please try again';
                 } else {
                     $ret_res['nickname'] = $steamid;
-                    $nickname2 = $stats->getSteamProfileName($steamid);
+                    $nickname = $steamid;
+                    $in_game_name = $stats->getSteamProfileName($steamid);
+                    $ret_res['in_game_name'] = $in_game_name;
                     if ($game == CSGO) {
                         $add_stats = $stats->getCSGOStats($steamid);
                     } else {
@@ -113,6 +118,8 @@
                     }
                 }
 	        } else {
+	            $in_game_name = $stats->getSteamProfileName($steamid);
+	            $ret_res['in_game_name'] = $in_game_name;
                 if ($game == CSGO) {
                     $add_stats = $stats->getCSGOStats($steamid);
                 } else {
@@ -124,17 +131,18 @@
 	    } else if ($game == PUBG) {
 	        
 	    } else if ($game == CoC) {
-	        
+	        $add_stats = $stats->getCoCStats($nickname);
+	        $in_game_name = $add_stats['name'];
+	        $ret_res['in_game_name'] = $in_game_name;
+	        unset($add_stats['name']);
 	    } else if ($game == CR) {
-	        
-	    } else if ($game == DOTA2) {
 	        
 	    }
 	    if ($add_stats == null) {
             $ret_res['status'] = 'e';
             $ret_res['message'] = 'An error occurred. Please try again';
 	    } else {
-            if (addGameToDB($user_id, $game, $nickname, $nickname2, $platform, json_encode($add_stats, JSON_FORCE_OBJECT), $conn)) {
+            if (addGameToDB($user_id, $game, $nickname, $nickname2, $in_game_name, $platform, json_encode($add_stats), $conn)) {
                 $ret_res['stats'] = $add_stats;
                 $ret_res['nickname2'] = $nickname2;
             } else {
@@ -145,14 +153,14 @@
 	    return $ret_res;
 	}
 	
-	function addGameToDB($user_id, $game, $nickname, $nickname2, $platform, $stats, $conn) {
-        $stmt = $conn->prepare("INSERT INTO games (user_id, game, nickname, nickname2, platform, stats) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssss", $user_id, $game, $nickname, $nickname2, $platform, $stats);
+	function addGameToDB($user_id, $game, $nickname, $nickname2, $in_game_name, $platform, $stats, $conn) {
+        $stmt = $conn->prepare("INSERT INTO games (user_id, game, nickname, nickname2, in_game_name, platform, stats) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssss", $user_id, $game, $nickname, $nickname2, $in_game_name, $platform, $stats);
         $result = $stmt->execute();
         $stmt->free_result();
         $stmt->close();
         return $result;
     }
 	
-	echo json_encode($response, JSON_FORCE_OBJECT);
+	echo json_encode($response);
 ?>
