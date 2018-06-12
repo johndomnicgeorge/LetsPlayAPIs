@@ -20,7 +20,7 @@
             $stmt_uid->bind_param("s", $username);
             $stmt_uid->execute();
             $stmt_uid->bind_result($id);
-            $user_uid = -1;
+            $user_id = -1;
             while ($stmt_uid->fetch()) {
 				$user_id = $id;
             }
@@ -32,8 +32,8 @@
                 $response['status'] = 'e';
 				$response['message'] = 'An error occurred. Please try again';
             } else {
-                $stmt_gid = $conn->prepare("SELECT id FROM games WHERE user_id = ? AND game = ? AND (nickname = ? OR nickname2 = ?)");
-                $stmt_gid->bind_param("ssss", $user_id, $game, $nickname, $nickname);
+                $stmt_gid = $conn->prepare("SELECT id FROM games WHERE user_id = ? AND game = ? AND (nickname = ? OR nickname2 = ?) AND platform = ?");
+                $stmt_gid->bind_param("sssss", $user_id, $game, $nickname, $nickname, $platform);
                 $stmt_gid->execute();
                 $stmt_gid->bind_result($id);
                 $game_id = -1;
@@ -106,10 +106,13 @@
                 } else if ($steamid == '') {
                     $ret_res['status'] = 'e';
                     $ret_res['message'] = 'Invalid Custom URL. Please try again';
+                } else if (checkSteamID($user_id, $game, $steamid, $conn)) {
+                    $ret_res['status'] = 'e';
+                    $ret_res['message'] = 'Game already exists for the given nickname';
                 } else {
                     $ret_res['nickname'] = $steamid;
                     $nickname = $steamid;
-                    $in_game_name = $stats->getSteamProfileName($steamid);
+                    $in_game_name = $stats->getSteamProfileName($steamid, null);
                     $ret_res['in_game_name'] = $in_game_name;
                     if ($game == CSGO) {
                         $add_stats = $stats->getCSGOStats($steamid);
@@ -118,7 +121,7 @@
                     }
                 }
 	        } else {
-	            $in_game_name = $stats->getSteamProfileName($steamid);
+	            $in_game_name = $stats->getSteamProfileName($steamid, null);
 	            $ret_res['in_game_name'] = $in_game_name;
                 if ($game == CSGO) {
                     $add_stats = $stats->getCSGOStats($steamid);
@@ -131,17 +134,40 @@
 	    } else if ($game == PUBG) {
 	        
 	    } else if ($game == CoC) {
+	        if (substr($nickname, 0, 1) !== "#") {
+	            $nickname = '#'.$nickname;
+	            $ret_res['nickname'] = $nickname;
+                $ret_res['nickname2'] = $nickname;
+                $ret_res['in_game_name'] = $nickname;
+                $in_game_name = $nickname;
+                $nickname2 = $nickname;
+	        }
 	        $add_stats = $stats->getCoCStats($nickname);
-	        $in_game_name = $add_stats['name'];
-	        $ret_res['in_game_name'] = $in_game_name;
-	        unset($add_stats['name']);
+	        if ($add_stats !== null) {
+	            $in_game_name = $add_stats['name'];
+	            $ret_res['in_game_name'] = $in_game_name;
+	            unset($add_stats['name']);
+	        }
 	    } else if ($game == CR) {
-	        
+	        if (substr($nickname, 0, 1) === "#") {
+	            $nickname = substr($nickname, 1, strlen($nickname));
+	            $ret_res['nickname'] = $nickname;
+                $ret_res['nickname2'] = $nickname;
+                $ret_res['in_game_name'] = $nickname;
+                $in_game_name = $nickname;
+                $nickname2 = $nickname;
+	        }
+	        $add_stats = $stats->getCRStats($nickname);
+	        if ($add_stats !== null) {
+	            $in_game_name = $add_stats['name'];
+	            $ret_res['in_game_name'] = $in_game_name;
+	            unset($add_stats['name']);
+	        }
 	    }
-	    if ($add_stats == null) {
+	    if ($add_stats === null) {
             $ret_res['status'] = 'e';
             $ret_res['message'] = 'An error occurred. Please try again';
-	    } else {
+	    } else if ($add_stats != null) {
             if (addGameToDB($user_id, $game, $nickname, $nickname2, $in_game_name, $platform, json_encode($add_stats), $conn)) {
                 $ret_res['stats'] = $add_stats;
                 $ret_res['nickname2'] = $nickname2;
@@ -160,6 +186,20 @@
         $stmt->free_result();
         $stmt->close();
         return $result;
+    }
+    
+    function checkSteamID($user_id, $game, $steamid, $conn) {
+        $stmt_gid = $conn->prepare("SELECT id FROM games WHERE user_id = ? AND game = ? AND (nickname = ? OR nickname2 = ?)");
+        $stmt_gid->bind_param("ssss", $user_id, $game, $steamid, $steamid);
+        $stmt_gid->execute();
+        $stmt_gid->bind_result($id);
+        $game_id = -1;
+        while ($stmt_gid->fetch()) {
+		    $game_id = $id;
+        }
+        $stmt_gid->free_result();
+        $stmt_gid->close();
+        return $game_id > -1;
     }
 	
 	echo json_encode($response);

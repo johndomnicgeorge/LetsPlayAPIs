@@ -7,6 +7,13 @@ class Stats {
     function __construct() {
     }
     
+    function checkString($val) {
+        if (is_null($val)) {
+            return 'N/A';
+        }
+        return strval($val);
+    }
+    
     function getSteam64ID($nickname) {
         try {
             $vanity_file = @file_get_contents(STEAMID_URL.$nickname);
@@ -23,7 +30,7 @@ class Stats {
         return null;
     }
     
-    function getSteamProfileName($steamid) {
+    function getSteamProfileName($steamid, $fallback) {
         try {
             $name_file = @file_get_contents(STEAM_PROFILE_URL.$steamid);
             $name_json = json_decode($name_file);
@@ -35,7 +42,7 @@ class Stats {
         } catch (Exception $e) {
             
         }
-        return $steamid;
+        return ($fallback === null ? $steamid : $fallback);
     }
     
     function getCSGOStats($steamid) {
@@ -60,17 +67,17 @@ class Stats {
             foreach ($playerstats->stats as $stat) {
                 if ($stat->name == 'total_kills') {
                     $kills = $stat->value;
-                    array_push($csgo_stats, array('key' => 'Kills', 'value' => strval($kills)));
+                    array_push($csgo_stats, array('key' => 'Kills', 'value' => $this->checkString($kills)));
                     if ($kills !== '' && $deaths !== '') {
                         $kd = floatval($kills) / floatval($deaths);
-                        array_push($csgo_stats, array('key' => 'Kills/Death', 'value' => strval(round($kd, 2))));
+                        array_push($csgo_stats, array('key' => 'Kills/Death', 'value' => $this->checkString(round($kd, 2))));
                     }
                 } else if ($stat->name == 'total_deaths') {
                     $deaths = $stat->value;
-                    array_push($csgo_stats, array('key' => 'Deaths', 'value' => strval($deaths)));
+                    array_push($csgo_stats, array('key' => 'Deaths', 'value' => $this->checkString($deaths)));
                     if ($kills !== '' && $deaths !== '') {
                         $kd = floatval($kills) / floatval($deaths);
-                        array_push($csgo_stats, array('key' => 'Kills/Death', 'value' => strval(round($kd, 2))));
+                        array_push($csgo_stats, array('key' => 'Kills/Death', 'value' => $this->checkString(round($kd, 2))));
                     }
                 } else if ($stat->name == 'total_time_played') {
                     $value = floatval($stat->value);
@@ -82,22 +89,22 @@ class Stats {
                     } else {
                         $time = $value / 3600;
                     }
-                    array_push($csgo_stats, array('key' => 'Time Played', 'value' => strval(round($time, 2)).$unit));
+                    array_push($csgo_stats, array('key' => 'Time Played', 'value' => $this->checkString(round($time, 2)).$unit));
                 } else if ($stat->name == 'total_mvps') {
-                    array_push($csgo_stats, array('key' => 'MVPs', 'value' => strval($stat->value)));
+                    array_push($csgo_stats, array('key' => 'MVPs', 'value' => $this->checkString($stat->value)));
                 } else if ($stat->name == 'total_matches_won') {
                     $matches_won = $stat->value;
-                    array_push($csgo_stats, array('key' => 'Matches Won', 'value' => strval($matches_won)));
+                    array_push($csgo_stats, array('key' => 'Matches Won', 'value' => $this->checkString($matches_won)));
                     if ($matches_won !== '' && $matches_played !== '') {
                         $win = floatval($matches_won) / floatval($matches_played);
-                        array_push($csgo_stats, array('key' => 'Win %', 'value' => strval($win)));
+                        array_push($csgo_stats, array('key' => 'Win %', 'value' => $this->checkString($win)));
                     }
                 } else if ($stat->name == 'total_matches_played') {
                     $matches_played = $stat->value;
-                    array_push($csgo_stats, array('key' => 'Matches Played', 'value' => strval($matches_played)));
+                    array_push($csgo_stats, array('key' => 'Matches Played', 'value' => $this->checkString($matches_played)));
                     if ($matches_won !== '' && $matches_played !== '') {
                         $win = 100 * floatval($matches_won) / floatval($matches_played);
-                        array_push($csgo_stats, array('key' => 'Win %', 'value' => strval(round($win, 2)).' %'));
+                        array_push($csgo_stats, array('key' => 'Win %', 'value' => $this->checkString(round($win, 2)).' %'));
                     }
                 } 
             }
@@ -186,20 +193,65 @@ class Stats {
         try {
             $coc_stats = array(
                 'name' => $coc_json['name'],
-                array('key' => 'Town Hall Level', 'value' => strval($coc_json['townHallLevel'])),
-                array('key' => 'Experience Level', 'value' => strval($coc_json['expLevel'])),
-                array('key' => 'Trophies', 'value' => strval($coc_json['trophies'])),
-                array('key' => 'Best Trophies', 'value' => strval($coc_json['bestTrophies'])),
-                array('key' => 'War Stars', 'value' => strval($coc_json['warStars'])),
-                array('key' => 'Attack Wins', 'value' => strval($coc_json['attackWins'])),
-                array('key' => 'Defense Wins', 'value' => strval($coc_json['defenseWins'])),
-                array('key' => 'Builder Hall Level', 'value' => strval($coc_json['builderHallLevel'])),
-                array('key' => 'Versus Trophies', 'value' => strval($coc_json['versusTrophies'])),
-                array('key' => 'Best Versus Trophies', 'value' => strval($coc_json['bestVersusTrophies'])),
-                array('key' => 'Versus Battle Wins', 'value' => strval($coc_json['versusBattleWins']))
+                array('key' => 'Town Hall Level', 'value' => $this->checkString($coc_json['townHallLevel'])),
+                array('key' => 'Experience Level', 'value' => $this->checkString($coc_json['expLevel'])),
+                array('key' => 'Trophies', 'value' => $this->checkString($coc_json['trophies'])),
+                array('key' => 'Best Trophies', 'value' => $this->checkString($coc_json['bestTrophies'])),
+                array('key' => 'War Stars', 'value' => $this->checkString($coc_json['warStars'])),
+                array('key' => 'Attack Wins', 'value' => $this->checkString($coc_json['attackWins'])),
+                array('key' => 'Defense Wins', 'value' => $this->checkString($coc_json['defenseWins'])),
+                array('key' => 'Builder Hall Level', 'value' => $this->checkString($coc_json['builderHallLevel'])),
+                array('key' => 'Versus Trophies', 'value' => $this->checkString($coc_json['versusTrophies'])),
+                array('key' => 'Best Versus Trophies', 'value' => $this->checkString($coc_json['bestVersusTrophies'])),
+                array('key' => 'Versus Battle Wins', 'value' => $this->checkString($coc_json['versusBattleWins']))
             );
             
             return $coc_stats;
+        } catch (Exception $e) {
+            
+        }
+        return null;
+    }
+    
+    function getCRStats($tag) {
+        $options = array('http'=>array(
+	            'method'=>"GET",
+	            'header'=>'Authorization: Bearer '.CR_API_KEY));
+        $context = stream_context_create($options);
+        $cr_file = file_get_contents(CR_STATS_URL.rawurlencode($tag), false, $context);
+        
+        if ($cr_file === FALSE) {
+            return null;
+        }
+        
+        $cr_json = json_decode($cr_file, true);
+        
+        if ($cr_json === null) {
+            return null;
+        }
+        
+        try {
+            $cr_stats = array(
+                'name' => $cr_json['name'],
+                array('key' => 'Rank', 'value' => $this->checkString($cr_json['rank'])),
+                array('key' => 'Level', 'value' => $this->checkString($cr_json['stats']['level'])),
+                array('key' => 'Trophies', 'value' => $this->checkString($cr_json['trophies'])),
+                array('key' => 'Highest Trophies', 'value' => $this->checkString($cr_json['stats']['maxTrophies'])),
+                array('key' => 'Three Crown Wins', 'value' => $this->checkString($cr_json['stats']['threeCrownWins'])),
+                array('key' => 'Total Games', 'value' => $this->checkString($cr_json['games']['total'])),
+                array('key' => 'Wins', 'value' => $this->checkString($cr_json['games']['wins'])),
+                array('key' => 'Wins %', 'value' => $this->checkString($cr_json['games']['winsPercent'] * 100)),
+                array('key' => 'Losses', 'value' => $this->checkString($cr_json['games']['losses'])),
+                array('key' => 'Losses %', 'value' => $this->checkString($cr_json['games']['lossesPercent'] * 100)),
+                array('key' => 'Draws', 'value' => $this->checkString($cr_json['games']['draws'])),
+                array('key' => 'Draws %', 'value' => $this->checkString($cr_json['games']['drawsPercent'] * 100)),
+                array('key' => 'Tournament Games', 'value' => $this->checkString($cr_json['games']['tournamentGames'])),
+                array('key' => 'Tournament Cards Won', 'value' => $this->checkString($cr_json['stats']['tournamentCardsWon'])),
+                array('key' => 'Challenge Max Wins', 'value' => $this->checkString($cr_json['stats']['challengeMaxWins'])),
+                array('key' => 'Challenge Cards Won', 'value' => $this->checkString($cr_json['stats']['challengeCardsWon']))
+            );
+            
+            return $cr_stats;
         } catch (Exception $e) {
             
         }
