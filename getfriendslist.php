@@ -5,7 +5,7 @@
     $conn = $connection->connect();
     
 	$response = array();
-	$response['games'] = array();
+	$response['friends'] = array();
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		if (!verifyRequiredParams(array('username'))) {
@@ -28,22 +28,36 @@
                 $response['status'] = 'e';
 				$response['message'] = 'An error occurred. Please try again';
             } else {
-                $stmt_gid = $conn->prepare("SELECT game, nickname, platform, in_game_name FROM games WHERE user_id = ?");
-                $stmt_gid->bind_param("s", $user_id);
-                $stmt_gid->execute();
-                $stmt_gid->bind_result($game, $nickname, $platform, $in_game_name);
+                $stmt_f1 = $conn->prepare("SELECT users.name, users.username, friends.game FROM users JOIN friends ON friends.user_id = users.id WHERE users.id IN (SELECT friends.user_id FROM friends WHERE friends.friend_id = ?)");
+                $stmt_f1->bind_param("s", $user_id);
+                $stmt_f1->execute();
+                $stmt_f1->bind_result($name, $uname, $game);
                 
-                while ($stmt_gid->fetch()) {
-				    array_push($response['games'], array('game'=>$game, 'nickname'=>$nickname, 'platform'=>$platform, 'in_game_name' => $in_game_name));
+                while ($stmt_f1->fetch()) {
+				    array_push($response['friends'], array('game'=>$game, 'name'=>$name, 'username'=>$uname));
                 }
                 
-                $stmt_gid->free_result();
-                $stmt_gid->close();
+                $stmt_f1->free_result();
+                $stmt_f1->close();
                 
-                // Check if there are games
-                if (count($response['games']) == 0) {
+                
+                $stmt_f2 = $conn->prepare("SELECT users.name, users.username, friends.game FROM users JOIN friends ON friends.friend_id = users.id WHERE users.id IN (SELECT friends.friend_id FROM friends WHERE friends.user_id = ?)");
+                $stmt_f2->bind_param("s", $user_id);
+                $stmt_f2->execute();
+                $stmt_f2->bind_result($name, $uname, $game);
+                
+                while ($stmt_f2->fetch()) {
+				    array_push($response['friends'], array('game'=>$game, 'name'=>$name, 'username'=>$uname));
+                }
+                
+                $stmt_f2->free_result();
+                $stmt_f2->close();
+                
+                
+                // Check if there are friends
+                if (count($response['friends']) == 0) {
                     $response['status'] = 'e';
-				    $response['message'] = 'Games list empty. Please add some games';
+				    $response['message'] = 'You have no friends :(';
                 } else {
                     $response['status'] = 's';
                     $response['message'] = '';

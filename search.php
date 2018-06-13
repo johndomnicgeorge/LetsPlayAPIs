@@ -17,10 +17,10 @@
 		    $likeparam = $search."%";
 		    $user_id = getUserID($username, $conn);
 
-			$stmt_uid = $conn->prepare("SELECT users.id, users.name, users.username, games.game FROM games JOIN users ON games.user_id = users.id WHERE games.game LIKE ? AND games.user_id IN (SELECT users.id FROM users WHERE users.username LIKE ? OR users.name LIKE ?)");
+			$stmt_uid = $conn->prepare("SELECT users.id, users.name, users.username, games.game, games.in_game_name FROM games JOIN users ON games.user_id = users.id WHERE games.game LIKE ? AND games.user_id IN (SELECT users.id FROM users WHERE users.username LIKE ? OR users.name LIKE ?)");
             $stmt_uid->bind_param("sss", $game, $likeparam, $likeparam);
             $stmt_uid->execute();
-            $stmt_uid->bind_result($uid, $name, $uname, $g);
+            $stmt_uid->bind_result($uid, $name, $uname, $g, $ign);
             $result = array();
             while ($stmt_uid->fetch()) {
                 if ($username != $uname) {
@@ -29,6 +29,7 @@
                     $row['name'] = $name;
                     $row['username'] = $uname;
                     $row['game'] = $g;
+                    $row['in_game_name'] = $ign;
                     array_push($result, $row);
                 }
             }

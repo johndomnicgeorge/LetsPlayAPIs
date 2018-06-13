@@ -11,7 +11,7 @@
 	$response = array();
  
 	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-		if (!verifyRequiredParams(array('username', 'password', 'name', 'gender', 'email'))) {
+		if (!verifyRequiredParams(array('username', 'password', 'name', 'gender', 'email', 'device'))) {
 
 			//getting values
 			$username = $_POST['username'];
@@ -19,11 +19,12 @@
 			$email = $_POST['email'];
 			$name = $_POST['name'];
 			$gender = $_POST['gender'];
+			$device = $_POST['device'];
  
             //echo $username.' '.$password.' '.$email.' '.$name.' '.$gender; 
  
 			//adding user to database
-			$result = createUser($username, $password, $name, $gender, $email, $conn);
+			$result = createUser($username, $password, $name, $gender, $email, $device, $conn);
  
 			//making the response accordingly
 			if ($result == USER_CREATED) {
@@ -35,17 +36,18 @@
 			} elseif ($result == USER_NOT_CREATED) {
 				$response['status'] = 'e';
 				$response['message'] = 'An error occurred. Please try again';
+				$response['error'] = 'User not created';
 			}
 			
 		} else {
-		    // Required parameters are missing
 			$response['status'] = 'e';
 			$response['message'] = 'An error occurred. Please try again';
+			$response['error'] = 'Required parameters are missing';
 		}
 	} else {
-	    // Invalid request
 		$response['status'] = 'e';
 		$response['message'] = 'An error occurred. Please try again';
+		$response['error'] = 'Invalid request';
 	}
 	
 	//function to validate the required parameter in request
@@ -66,19 +68,19 @@
 		return false;
 	}
 	
-	function createUser($username, $password, $name, $gender, $email, $conn) {
+	function createUser($username, $password, $name, $gender, $email, $device, $conn) {
         if (isUserExist($username, $email, $conn)) {
             return USER_ALREADY_EXISTS;
         } else {
             //$password = md5($pass);
-            $stmt = $conn->prepare("INSERT INTO users (username, password, name, gender, email) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $username, $password, $name, $gender, $email);
+            $stmt = $conn->prepare("INSERT INTO users (username, password, name, gender, email, device) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $username, $password, $name, $gender, $email, $device);
             if ($stmt->execute()) {
                 close($stmt);
                 return USER_CREATED;
             } else {
-                close($stmt);
                 //echo $stmt->error.' @@@ '.mysqli_error();
+                close($stmt);
                 return USER_NOT_CREATED;
             }
         }

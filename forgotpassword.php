@@ -21,8 +21,15 @@
             while ($stmt->fetch()) {
                 $to = $email;
                 $subject = 'Let\'s Play - Forgot Password';
-                $body = 'Hi '.$name.',\r\n\r\nThe password for your Let\'s Play account is '.$password.'\r\n\r\n\nRegards,\r\nLet\'s Play Team';
-                $headers = 'From: no-reply@letsplay.com';
+                
+                $body = file_get_contents("forgot_password_template.html");
+                $body = str_replace("{{NAME}}", $name, $body);
+                $body = str_replace("{{PASSWORD}}", $password, $body);
+                
+                $headers = "From: no-reply@letsplay.com"."\r\n";
+                $headers .= "Reply-To: no-reply@letsplay.com"."\r\n";
+                $headers .= "MIME-Version: 1.0\r\n";
+                $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
  
                 if(!mail($to, $subject, $body, $headers)) {
                     $status = 'e';
