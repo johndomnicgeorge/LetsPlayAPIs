@@ -34,13 +34,15 @@
                 $response['status'] = 'e';
 				$response['message'] = 'An error occurred. Please try again';
             } else {
+                $results = array();
                 $stmt_f1 = $conn->prepare("SELECT users.name, users.email FROM users WHERE users.id IN (SELECT friends.user_id FROM friends WHERE friends.friend_id = ? AND game = ?)");
                 $stmt_f1->bind_param("is", $user_id, $game);
                 $stmt_f1->execute();
                 $stmt_f1->bind_result($f_name, $email);
                 
                 while ($stmt_f1->fetch()) {
-				    sendMail($u_name, $f_name, $email, $gender, $game);
+                    array_push($results, array('u_name' => $u_name, 'f_name' => $f_name, 'email' => $email, 'gender' => $gender, 'game' => $game));
+				    //sendMail($u_name, $f_name, $email, $gender, $game);
                 }
                 
                 $stmt_f1->free_result();
@@ -52,14 +54,20 @@
                 $stmt_f2->bind_result($f_name, $email);
                 
                 while ($stmt_f2->fetch()) {
-				    sendMail($u_name, $f_name, $email, $gender, $game);
+                    array_push($results, array('u_name' => $u_name, 'f_name' => $f_name, 'email' => $email, 'gender' => $gender, 'game' => $game));
+				    //sendMail($u_name, $f_name, $email, $gender, $game);
                 }
                 
                 $stmt_f2->free_result();
                 $stmt_f2->close();
                 
+                $results = unique_multidim_array($results, 'email');
+                foreach($results as $row) {
+                    sendMail($row['u_name'], $row['f_name'], $row['email'], $row['gender'], $row['game']);
+                }
+                
                 $response['status'] = 's';
-                $response['message'] = '';
+                $response['message'] = 'Invitation sent';
             }
 		} else {
 			// Required parameters are missing
@@ -71,6 +79,21 @@
 		$response['status'] = 'e';
 		$response['message'] = 'An error occurred. Please try again';
 	}
+	
+	function unique_multidim_array($array, $key) {
+        $temp_array = array();
+        $i = 0;
+        $key_array = array();
+   
+        foreach($array as $val) {
+            if (!in_array($val[$key], $key_array)) {
+                $key_array[$i] = $val[$key];
+                $temp_array[$i] = $val;
+            }
+            $i++;
+        }
+    return $temp_array;
+} 
 	
 	function getGameName($game) {
 	    if ($game == 'csgo') {

@@ -169,8 +169,38 @@ class Stats {
         return null;
     }
     
-    function getPUBGStats() {
+    function getPUBGStats($platform) {
+        $options = array('http'=>array(
+	            'method'=>"GET",
+	            'header'=>'Authorization: Bearer '.PUBG_API_KEY.'\r\n'
+	                        .'accept: application/vnd.api+json'.'\r\n'
+	                        .'content-type: application/vnd.api+json'.'\r\n'
+	           ));
+        $context = stream_context_create($options);
+        $seasons_file = file_get_contents(sprintf(PUBG_SEASONS_URL, rawurlencode($platform)), false, $context);
         
+        if ($seasons_file === FALSE) {
+            return null;
+        }
+        
+        $seasons_json = json_decode($seasons_file, true);
+        
+        if ($seasons_json === null) {
+            return null;
+        }
+        
+        $season_id = '';
+        
+        foreach($seasons_json->data as $data) {
+            $att = $data->attributes;
+            if ($att->isCurrentSeason) {
+                $season_id = $data->id;
+                break;
+            }
+        }
+        
+        echo $season_id;
+        return null;
     }
     
     function getCoCStats($tag) {
@@ -178,7 +208,7 @@ class Stats {
 	            'method'=>"GET",
 	            'header'=>'Authorization: Bearer '.COC_API_KEY));
         $context = stream_context_create($options);
-        $coc_file = file_get_contents(COC_STATS_URL.rawurlencode($tag), false, $context);
+        $coc_file = @file_get_contents(COC_STATS_URL.rawurlencode($tag), false, $context);
         
         if ($coc_file === FALSE) {
             return null;
@@ -218,7 +248,7 @@ class Stats {
 	            'method'=>"GET",
 	            'header'=>'Authorization: Bearer '.CR_API_KEY));
         $context = stream_context_create($options);
-        $cr_file = file_get_contents(CR_STATS_URL.rawurlencode($tag), false, $context);
+        $cr_file = @file_get_contents(CR_STATS_URL.rawurlencode($tag), false, $context);
         
         if ($cr_file === FALSE) {
             return null;

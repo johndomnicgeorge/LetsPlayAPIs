@@ -132,7 +132,7 @@
 	    } else if ($game == FORTNITE) {
 	        $add_stats = $stats->getFortniteStats($nickname, $platform);
 	    } else if ($game == PUBG) {
-	        
+	        //$add_stats = $stats->getPUBGStats($platform);
 	    } else if ($game == CoC) {
 	        if (substr($nickname, 0, 1) !== "#") {
 	            $nickname = '#'.$nickname;
@@ -173,10 +173,14 @@
                 $ret_res['nickname2'] = $nickname2;
             } else {
                 $ret_res['status'] = 'e';
-                $ret_res['message'] = 'An error occurred. Please try again';
+                $ret_res['message'] = getErrorMessage($game);
             }
 	    }
 	    return $ret_res;
+	}
+	
+	function getErrorMessage($game) {
+	    return ($game == CSGO || $game == DOTA2) ? 'Error - Your profile may be private. Please make it public and try again' : 'An error occurred. Please try again';
 	}
 	
 	function addGameToDB($user_id, $game, $nickname, $nickname2, $in_game_name, $platform, $stats, $conn) {

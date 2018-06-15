@@ -21,6 +21,8 @@ define('FORTNITE_STATS_URL', 'https://api.fortnitetracker.com/v1/profile/');
 define('COC_STATS_URL', 'https://api.clashofclans.com/v1/players/');
 define('CR_STATS_URL', 'https://api.royaleapi.com/player/');
 define('PUBG_PROFILE_URL', 'https://api.playbattlegrounds.com/shards/%s/players?filter[playerNames]=%s');
+define('PUBG_SEASONS_URL', 'https://api.playbattlegrounds.com/shards/%s/seasons');
+define('PUBG_STATS_URL', 'https://api.playbattlegrounds.com/shards/%s/players/%s/seasons/%s');
 
 class connection {
     private $conn;
